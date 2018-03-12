@@ -10,7 +10,9 @@ library(dplyr)
 library(rebus)
 ```
 
-Some guidelines to entering strings
+### Defining strings
+
+Defning string in R is a bit tricky and there are some conventions to handle different kind of scenarios.
 
 ``` r
 l1 <- "I said Hi!" # No quotes in the strng, use double quotes
@@ -24,7 +26,7 @@ writeLines(lines,sep="\n")
     ## I said "Hi"
     ## I'd said "Hi!"
 
-Turning numbers to string using `format` and `formatC`. Two number types are fixed and scientific
+Numbers can be converted to strings using `format` and `formatC`. The numbers can be converted to two types; fixed and scientific.
 
 ``` r
 nums <- c(19800000000000000000000000000,0.000000000000000000000023)
@@ -96,7 +98,7 @@ paste(c("Hey","How are"),c("you!"),sep="*",collapse = ", ")
 
     ## [1] "Hey*you!, How are*you!"
 
-**Stringr**
+### Stringr
 
 -   Built on `stringi`, easy to learn
 -   All functions start with `str_`, concise and consistent
@@ -157,7 +159,7 @@ str_sub(head(girl_names_2014),-3,-1)#extracting subtrings
 **Detecting patterns**
 
 -   `str_detect()`- returns a logical vector indicating whether the pattern exists or not
--   `str_subset()`- returns only the strng from the vector that contains the pattern
+-   `str_subset()`- returns only the strings from the vector that contains the pattern
 -   `str_count()`- returns the number of times a pattern occured in each element of the vector
 
 ``` r
@@ -190,7 +192,9 @@ first_names <- both_names_split[,2]
 last_names <- both_names_split[,1]
 ```
 
-\*\* Replacing strings \*\* `str_replace` and `str_replace_all`
+**Replacing strings**
+
+`str_replace` and `str_replace_all`
 
 ``` r
 phone_numbers <- c("510-555-0123", "541-555-0167")
@@ -206,4 +210,90 @@ str_replace_all(phone_numbers,pattern=fixed("-")," ")
 
     ## [1] "510 555 0123" "541 555 0167"
 
-##### Regular expressions
+### Regular expressions
+
+Regular expressions are a language for desribing patterns. Take the pattern below and its meaning for instance <br/>
+
+`^.[\d]+`- "the start of the string, followed by any single character, followed by one or more digits" <br/>
+
+The same regex pattern can be obtained using the `rebus` library. The syntax is a bit more verbose but more understandable. Below is the syntax for the same regex using `rebus` : <br/>
+
+``` r
+START %R%
+  ANY_CHAR %R%
+  one_or_more(DGT)
+```
+
+    ## <regex> ^.[\d]+
+
+`rebus` provides `START` and `END` shortcuts to specify regular expressions that match the start and end of the string. These are also known as *anchors*. <br/>
+
+The special operator provided by rebus, `%R%` allows you to compose complicated regular expressions from simple pieces. When you are reading rebus code, think of `%R%` as "then".<br/>
+
+`START %R% "c"` - this regex should be interpreted as "the start of a string then a c" <br/>
+
+`str_view()` from `stringr` is really helpful for testing patterns. It will show an html output with the matches highlighted.
+
+``` r
+pattern <- "z" %R% ANY_CHAR
+
+# Find names that have the pattern
+names_with_z <- str_subset(boy_names_2014,pattern=pattern)
+length(names_with_z)
+```
+
+    ## [1] 441
+
+``` r
+# Find part of name that matches pattern
+part_with_z <- str_extract(boy_names_2014,pattern=pattern)
+table(part_with_z)
+```
+
+    ## part_with_z
+    ##  za  zc  zd  ze  zg  zh  zi  zj  zk  zl  zm  zn  zo  zp  zr  zu  zv  zw 
+    ## 133   2   4 108   1   4 104   1   1   5   7   1  22   2  12   5   1   2 
+    ##  zy  zz 
+    ##  10  16
+
+``` r
+# Did any names have the pattern more than once?
+count_of_z <- str_count(boy_names_2014,pattern=pattern)
+table(count_of_z)
+```
+
+    ## count_of_z
+    ##     0     1     2 
+    ## 13585   439     2
+
+``` r
+# Which babies got these names?
+with_z <- str_detect(boy_names_2014,pattern=pattern)
+
+# What fraction of babies got these names?
+mean(with_z)
+```
+
+    ## [1] 0.03144161
+
+### More on regex
+
+| Pattern                           | Regular Expression      | rebus            |
+|-----------------------------------|-------------------------|------------------|
+| Start of a string                 | ^                       | START            |
+| End of a string                   | $                       | END              |
+| Any single character              | .                       | ANY\_CHAR        |
+| Literal dot, carat or dollar sign | `"\\."`,`"\\^"`,`"\\$"` | DOT,CARAT,DOLLAR |
+
+**Alternation** - This is more like a logical OR, regex `"(dog|cat)"` will capture "dog" or "cat". The `rebus` equivalent of these patterns is the `or` function.<br/>
+
+**Character classes** - Similar to `ANY_CHAR` but with a restricton on what characters are allowed. Regex expressions patterns look like `[Aa]` or `[^Aa]`. The carat inside a class means negated. The `rebus` equivalent functions for these patterns are `char_class()` and `negated_char_class()`. <br/>
+
+**Repititions** - In regex the metacharacters to handle repititions are:
+
+-   `?`- optional
+-   `*`-zero or more
+-   `+`-one or more
+-   `{n}{m}`-repeated between n and m times
+
+The `rebus` equivalent functions for these patterns are `optional()`,`zero_or_more`,`one_or_more()`,`repeated()` respectively.<br/>
