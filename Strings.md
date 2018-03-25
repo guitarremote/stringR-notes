@@ -297,3 +297,97 @@ mean(with_z)
 -   `{n}{m}`-repeated between n and m times
 
 The `rebus` equivalent functions for these patterns are `optional()`,`zero_or_more`,`one_or_more()`,`repeated()` respectively.<br/>
+
+``` r
+#match names that start with Cath or Kath
+ckath <- or("C","K")%R%"ath"
+cath_names <- str_subset(girl_names_2014,pattern=ckath)
+print(head(cath_names))
+```
+
+    ## [1] "Katherine" "Catherine" "Kathryn"   "Kathleen"  "Kathy"     "Katharine"
+
+``` r
+#names that are only vowels
+vowels<-char_class("aeiouAEIOU")
+vowel_names <- str_subset(boy_names_2014,pattern = exactly(one_or_more(vowels)))
+print(head(vowel_names))
+```
+
+    ## [1] "Io"
+
+``` r
+#negated_char_class() for names without any vowels
+not_vowels<-negated_char_class("aeiouAEIOU")
+no_vowel_names <- str_subset(boy_names_2014,pattern = exactly(one_or_more(not_vowels)))
+print(head(no_vowel_names))
+```
+
+    ## [1] "Ty"    "Rhys"  "Flynn" "Sky"   "Fynn"  "Kyng"
+
+### Shortcuts
+
+Suppose we want to match any digit, rather than writing all the digits from 0 to 9, there are shortcuts available in regex to take care of that. The shortcut for digits is \[0-9\]. Below are a few more examples:
+
+-   `[0-9]` or `\d`- A digit - `rebus` equivalent - `char_class("0-9")` or `DGT`
+-   `[a-z]`- A lower case letter - `rebus` equivalent - `char_class("a-z")`
+-   `[A-Z]` - An upper case letter - `rebus` equivalent - `char_class("A-Z")`
+-   `\w` - A word character - `rebus` equivalent - `char_class("a-zA-Z0-9")` or `WRD`
+-   `\s` - A whitespace character - `rebus` equivalent - `SPC`
+
+### Advanced regex tricks
+
+#### Capturing parts of a pattern
+
+In rebus, to denote a part of a regular expression you want to capture, you surround it with the function `capture()`. In the example below, we are capturing the part before a `@` in an email. The part of the string that matches hasn't changed, that is the reason why the output of `str_extract` is the same below for both `email_pattern` and `email_capture_pattern`. But if we pull out the match using `str_match`,we see something interesting.
+
+As you can see for `email_capture_pattern`, `str_match` returns a matrix. The first column is the match of the total pattern, which is same as `email_pattern`. The second column is the match of the captured part. This comes in very handy when we create a complicated pattern but still want to access different parts of it.
+
+``` r
+test_email <- "My email is john_cena@wwe.com. You can't see me"
+#pattern to detect an email
+email_pattern <- one_or_more(WRD) %R% 
+  "@" %R% one_or_more(WRD) %R% 
+  DOT %R% one_or_more(WRD)
+
+#same pattern with a capture
+email_capture_pattern <- capture(one_or_more(WRD)) %R% 
+  "@" %R% one_or_more(WRD) %R% 
+  DOT %R% one_or_more(WRD)
+
+email_pattern
+```
+
+    ## <regex> [\w]+@[\w]+\.[\w]+
+
+``` r
+email_capture_pattern
+```
+
+    ## <regex> ([\w]+)@[\w]+\.[\w]+
+
+``` r
+str_extract(test_email,pattern = email_pattern)
+```
+
+    ## [1] "john_cena@wwe.com"
+
+``` r
+str_extract(test_email,pattern = email_capture_pattern)
+```
+
+    ## [1] "john_cena@wwe.com"
+
+``` r
+str_match(test_email,pattern = email_pattern)
+```
+
+    ##      [,1]               
+    ## [1,] "john_cena@wwe.com"
+
+``` r
+str_match(test_email,pattern = email_capture_pattern)
+```
+
+    ##      [,1]                [,2]       
+    ## [1,] "john_cena@wwe.com" "john_cena"
